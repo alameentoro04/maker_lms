@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lesson extends Model
 {
+    use HasFactory;
+
     public const TYPES = ['video', 'text', 'mixed', 'quiz', 'assignment', 'resource'];
 
     protected $fillable = [
@@ -28,5 +31,15 @@ class Lesson extends Model
     public function resources(): HasMany
     {
         return $this->hasMany(LessonResource::class);
+    }
+
+    public function assignment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Assignment::class);
+    }
+
+    public function progress(): HasMany
+    {
+        return $this->hasMany(LessonProgress::class);
     }
 }

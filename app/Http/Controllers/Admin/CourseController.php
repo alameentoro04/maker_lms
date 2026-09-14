@@ -66,7 +66,7 @@ class CourseController extends Controller
     {
         $this->authorize('update', $course);
 
-        $course->load(['instructors', 'modules.lessons']);
+        $course->load(['instructors', 'modules.lessons.assignment']);
 
         return Inertia::render('Admin/Courses/Form', [
             'course' => [
@@ -98,6 +98,13 @@ class CourseController extends Controller
                     'order' => $l->order,
                     'is_preview' => $l->is_preview,
                     'is_published' => $l->is_published,
+                    'assignment' => $l->assignment ? [
+                        'instructions' => $l->assignment->instructions,
+                        'due_at' => $l->assignment->due_at?->format('Y-m-d\TH:i'),
+                        'max_file_size_kb' => $l->assignment->max_file_size_kb,
+                        'allow_resubmission' => $l->assignment->allow_resubmission,
+                        'passing_score' => $l->assignment->passing_score,
+                    ] : null,
                 ]),
             ]),
         ]);

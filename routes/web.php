@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AssignmentController as AdminAssignmentController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
@@ -8,7 +9,9 @@ use App\Http\Controllers\Admin\EnrollmentController as AdminEnrollmentController
 use App\Http\Controllers\Admin\LessonController as AdminLessonController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Instructor\AssignmentController as InstructorAssignmentController;
 use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
+use App\Http\Controllers\Instructor\SubmissionController as InstructorSubmissionController;
 use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\CohortController;
 use App\Http\Controllers\Public\CourseController;
@@ -16,7 +19,10 @@ use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InstructorController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\ShowcaseController;
+use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Student\LearnController;
+use App\Http\Controllers\Student\VideoStreamController;
 use App\Models\Role;
 use Illuminate\Support\Facades\Route;
 
@@ -69,6 +75,7 @@ Route::middleware(['auth', 'verified', 'role:'.Role::SUPER_ADMIN.','.Role::ADMIN
         Route::post('courses/{course}/modules/{module}/lessons', [AdminLessonController::class, 'store'])->name('courses.modules.lessons.store');
         Route::put('courses/{course}/modules/{module}/lessons/{lesson}', [AdminLessonController::class, 'update'])->name('courses.modules.lessons.update');
         Route::delete('courses/{course}/modules/{module}/lessons/{lesson}', [AdminLessonController::class, 'destroy'])->name('courses.modules.lessons.destroy');
+        Route::put('courses/{course}/modules/{module}/lessons/{lesson}/assignment', [AdminAssignmentController::class, 'upsert'])->name('courses.modules.lessons.assignment');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.Role::INSTRUCTOR])
@@ -76,6 +83,10 @@ Route::middleware(['auth', 'verified', 'role:'.Role::INSTRUCTOR])
     ->name('instructor.')
     ->group(function () {
         Route::get('/dashboard', InstructorDashboardController::class)->name('dashboard');
+
+        Route::get('assignments', [InstructorAssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('assignments/{assignment}/submissions', [InstructorSubmissionController::class, 'index'])->name('assignments.submissions');
+        Route::post('submissions/{submission}/grade', [InstructorSubmissionController::class, 'grade'])->name('submissions.grade');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.Role::STUDENT])
@@ -83,6 +94,21 @@ Route::middleware(['auth', 'verified', 'role:'.Role::STUDENT])
     ->name('student.')
     ->group(function () {
         Route::get('/dashboard', StudentDashboardController::class)->name('dashboard');
+    });
+
+// The course player is shared across every authenticated role (students learn;
+// instructors/admins preview what they built) — CourseAccessService, not route
+// middleware, decides who actually sees the content.
+Route::middleware(['auth', 'verified'])
+    ->prefix('learn')
+    ->name('learn.')
+    ->group(function () {
+        Route::get('{course:slug}', [LearnController::class, 'show'])->name('show');
+        Route::get('{course:slug}/lessons/{lesson}', [LearnController::class, 'lesson'])->name('lesson');
+        Route::post('lessons/{lesson}/complete', [LearnController::class, 'completeLesson'])->name('lessons.complete');
+        Route::post('assignments/{assignment}/submit', [StudentAssignmentController::class, 'submit'])->name('assignments.submit');
+        Route::get('submissions/{submission}/download', [StudentAssignmentController::class, 'downloadSubmissionFile'])->name('submissions.download');
+        Route::get('video/{reference}/mock-stream', VideoStreamController::class)->middleware('signed')->name('video.mock-stream');
     });
 
 require __DIR__.'/auth.php';
