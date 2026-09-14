@@ -47,6 +47,21 @@ class Cohort extends Model
         return $this->belongsToMany(User::class, 'cohort_instructor');
     }
 
+    public function enrollments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    public function activeEnrollmentCount(): int
+    {
+        return $this->enrollments()->whereIn('status', ['pending', 'active', 'completed'])->count();
+    }
+
+    public function hasCapacity(): bool
+    {
+        return $this->activeEnrollmentCount() < $this->capacity;
+    }
+
     /**
      * Public-facing enrollment availability. This checks dates/status/capacity
      * ONLY — it does not know about real enrollment counts yet (Phase 5), so

@@ -1,6 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\CohortController as AdminCohortController;
+use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\EnrollmentController as AdminEnrollmentController;
+use App\Http\Controllers\Admin\LessonController as AdminLessonController;
+use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
 use App\Http\Controllers\Public\CertificateVerificationController;
@@ -37,7 +43,32 @@ Route::middleware(['auth', 'verified', 'role:'.Role::SUPER_ADMIN.','.Role::ADMIN
     ->name('admin.')
     ->group(function () {
         Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
-        // Users, courses, cohorts, payments, etc. routes land in their respective phases.
+
+        Route::get('categories', [AdminCategoryController::class, 'index'])->name('categories.index');
+        Route::post('categories', [AdminCategoryController::class, 'store'])->name('categories.store');
+        Route::delete('categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
+
+        Route::resource('cohorts', AdminCohortController::class)->except(['show']);
+
+        Route::get('enrollments', [AdminEnrollmentController::class, 'index'])->name('enrollments.index');
+        Route::post('enrollments', [AdminEnrollmentController::class, 'store'])->name('enrollments.store');
+        // Users, payments, etc. routes land in their respective phases.
+    });
+
+// Course/module/lesson management is shared with Instructor accounts — CoursePolicy
+// restricts instructors to courses they're actually assigned to, so this group only
+// needs to gate "not a student/guest", not the fine-grained ownership check.
+Route::middleware(['auth', 'verified', 'role:'.Role::SUPER_ADMIN.','.Role::ADMIN.','.Role::STAFF.','.Role::INSTRUCTOR])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::resource('courses', AdminCourseController::class)->except(['show']);
+        Route::post('courses/{course}/modules', [AdminModuleController::class, 'store'])->name('courses.modules.store');
+        Route::put('courses/{course}/modules/{module}', [AdminModuleController::class, 'update'])->name('courses.modules.update');
+        Route::delete('courses/{course}/modules/{module}', [AdminModuleController::class, 'destroy'])->name('courses.modules.destroy');
+        Route::post('courses/{course}/modules/{module}/lessons', [AdminLessonController::class, 'store'])->name('courses.modules.lessons.store');
+        Route::put('courses/{course}/modules/{module}/lessons/{lesson}', [AdminLessonController::class, 'update'])->name('courses.modules.lessons.update');
+        Route::delete('courses/{course}/modules/{module}/lessons/{lesson}', [AdminLessonController::class, 'destroy'])->name('courses.modules.lessons.destroy');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.Role::INSTRUCTOR])

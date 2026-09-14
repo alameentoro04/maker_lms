@@ -43,6 +43,16 @@ class Course extends Model
         return $this->hasMany(Cohort::class);
     }
 
+    public function modules(): HasMany
+    {
+        return $this->hasMany(Module::class)->orderBy('order');
+    }
+
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
     public function instructors(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'course_instructor');

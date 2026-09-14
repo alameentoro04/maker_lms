@@ -46,6 +46,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Course::class, 'course_instructor');
     }
 
+    public function enrollments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
     /**
      * Central permission check. Super Admin always passes — see AuthServiceProvider::boot()
      * for the Gate::before() bypass; this method is what every Policy/Blade/Inertia check calls.
