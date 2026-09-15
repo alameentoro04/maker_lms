@@ -78,6 +78,11 @@ export default function Form({ cohort, courses, statuses, instructors }: FormPro
             <Link href={route('admin.cohorts.index')} className="text-sm text-ink-500 hover:text-gold-600">
                 ← All cohorts
             </Link>
+            {isEditing && (
+                <Link href={route('admin.cohorts.exam.edit', cohort!.id)} className="ml-4 text-sm text-ink-500 hover:text-gold-600">
+                    Configure final exam →
+                </Link>
+            )}
 
             <form onSubmit={submit} className="mt-4 max-w-2xl space-y-4">
                 <Select label="Course" name="course_id" value={data.course_id} onChange={(e) => setData('course_id', e.target.value as any)} error={errors.course_id}>

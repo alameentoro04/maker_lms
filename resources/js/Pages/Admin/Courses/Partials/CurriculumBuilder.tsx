@@ -19,6 +19,14 @@ interface LessonRow {
         allow_resubmission: boolean;
         passing_score: number | null;
     } | null;
+    quiz: {
+        id: number;
+        passing_score: number;
+        time_limit_minutes: number | null;
+        attempt_limit: number;
+        randomize_questions: boolean;
+        questions: { id: number; type: string; question: string; points: number; options: { option_text: string; is_correct: boolean }[] }[];
+    } | null;
 }
 
 export interface ModuleWithLessons {
@@ -130,12 +138,12 @@ function LessonList({ courseId, moduleId, lessons }: { courseId: number; moduleI
                         <div className="flex items-center justify-between">
                             <button
                                 type="button"
-                                onClick={() => lesson.type === 'assignment' && setExpandedLessonId(expandedLessonId === lesson.id ? null : lesson.id)}
+                                onClick={() => (lesson.type === 'assignment' || lesson.type === 'quiz') && setExpandedLessonId(expandedLessonId === lesson.id ? null : lesson.id)}
                                 className="text-left"
                             >
                                 <p className="font-medium text-ink-900">{lesson.title}</p>
                                 <p className="text-xs text-ink-500 capitalize">
-                                    {lesson.type}{lesson.type === 'assignment' && ' — click to configure'}
+                                    {lesson.type}{(lesson.type === 'assignment' || lesson.type === 'quiz') && ' — click to configure'}
                                 </p>
                             </button>
                             <div className="flex items-center gap-3">
@@ -157,6 +165,9 @@ function LessonList({ courseId, moduleId, lessons }: { courseId: number; moduleI
 
                         {lesson.type === 'assignment' && expandedLessonId === lesson.id && (
                             <AssignmentConfigForm courseId={courseId} moduleId={moduleId} lessonId={lesson.id} assignment={lesson.assignment} />
+                        )}
+                        {lesson.type === 'quiz' && expandedLessonId === lesson.id && (
+                            <QuizConfigPanel courseId={courseId} moduleId={moduleId} lessonId={lesson.id} quiz={lesson.quiz} />
                         )}
                     </div>
                 ))}
@@ -224,6 +235,140 @@ function AssignmentConfigForm({ courseId, moduleId, lessonId, assignment }: {
                 Allow resubmission
             </label>
             <Button type="submit" loading={form.processing} className="w-auto px-5">Save assignment settings</Button>
+        </form>
+    );
+}
+
+function QuizConfigPanel({ courseId, moduleId, lessonId, quiz }: {
+    courseId: number;
+    moduleId: number;
+    lessonId: number;
+    quiz: LessonRow['quiz'];
+}) {
+    const form = useForm({
+        passing_score: quiz?.passing_score ?? 70,
+        time_limit_minutes: quiz?.time_limit_minutes ?? ('' as number | ''),
+        attempt_limit: quiz?.attempt_limit ?? 1,
+        randomize_questions: quiz?.randomize_questions ?? (false as boolean),
+    });
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        form.put(route('admin.courses.modules.lessons.quiz', [courseId, moduleId, lessonId]), { preserveScroll: true });
+    };
+
+    return (
+        <div className="mt-3 rounded-md bg-ink-50 p-4 space-y-4">
+            <form onSubmit={submit} className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                    <TextField label="Passing score (%)" name="passing_score" type="number" min={0} max={100}
+                        value={form.data.passing_score} onChange={(e) => form.setData('passing_score', Number(e.target.value))} error={form.errors.passing_score} />
+                    <TextField label="Time limit (min)" name="time_limit_minutes" type="number" min={1}
+                        value={form.data.time_limit_minutes} onChange={(e) => form.setData('time_limit_minutes', e.target.value === '' ? '' : Number(e.target.value))} error={form.errors.time_limit_minutes} />
+                    <TextField label="Attempt limit" name="attempt_limit" type="number" min={1}
+                        value={form.data.attempt_limit} onChange={(e) => form.setData('attempt_limit', Number(e.target.value))} error={form.errors.attempt_limit} />
+                </div>
+                <Button type="submit" loading={form.processing} className="w-auto px-5">Save quiz settings</Button>
+            </form>
+
+            {quiz && (
+                <div>
+                    <p className="text-sm font-semibold text-ink-900">Questions</p>
+                    <div className="mt-2 space-y-2">
+                        {quiz.questions.map((q, i) => (
+                            <div key={q.id} className="rounded-md bg-white border border-ink-100 p-3">
+                                <div className="flex items-start justify-between">
+                                    <p className="text-sm text-ink-900">{i + 1}. {q.question}</p>
+                                    <button
+                                        onClick={() => confirm('Delete this question?') && router.delete(route('admin.quizzes.questions.destroy', [quiz.id, q.id]), { preserveScroll: true })}
+                                        className="text-xs text-red-600 hover:text-red-700"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                                <ul className="mt-1">
+                                    {q.options.map((opt, oi) => (
+                                        <li key={oi} className={`text-xs ${opt.is_correct ? 'text-green-700 font-medium' : 'text-ink-500'}`}>
+                                            {opt.is_correct ? '✓ ' : '— '}{opt.option_text}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                        {quiz.questions.length === 0 && <p className="text-sm text-ink-500">No questions yet.</p>}
+                    </div>
+
+                    <QuizQuestionForm quizId={quiz.id} />
+                </div>
+            )}
+
+            {!quiz && <p className="text-sm text-ink-500">Save quiz settings above before adding questions.</p>}
+        </div>
+    );
+}
+
+function QuizQuestionForm({ quizId }: { quizId: number }) {
+    const [type, setType] = useState<'multiple_choice' | 'true_false' | 'short_answer'>('multiple_choice');
+    const form = useForm({
+        type: 'multiple_choice',
+        question: '',
+        explanation: '',
+        points: 1,
+        options: [{ option_text: '', is_correct: true }, { option_text: '', is_correct: false }] as { option_text: string; is_correct: boolean }[],
+    });
+
+    const setQuestionType = (t: typeof type) => {
+        setType(t);
+        form.setData({ ...form.data, type: t });
+    };
+
+    const updateOption = (index: number, field: 'option_text' | 'is_correct', value: string | boolean) => {
+        const options = form.data.options.map((o, i) => {
+            if (field === 'is_correct') return { ...o, is_correct: i === index };
+            return i === index ? { ...o, option_text: value as string } : o;
+        });
+        form.setData('options', options);
+    };
+
+    const addOption = () => form.setData('options', [...form.data.options, { option_text: '', is_correct: false }]);
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        form.post(route('admin.quizzes.questions.store', quizId), { preserveScroll: true, onSuccess: () => form.reset() });
+    };
+
+    return (
+        <form onSubmit={submit} className="mt-3 rounded-md border border-dashed border-ink-300 bg-white p-3 space-y-3">
+            <p className="text-sm font-semibold text-ink-900">Add question</p>
+            <div className="flex gap-4 text-xs">
+                <label className="flex items-center gap-1.5"><input type="radio" checked={type === 'multiple_choice'} onChange={() => setQuestionType('multiple_choice')} /> Multiple choice</label>
+                <label className="flex items-center gap-1.5"><input type="radio" checked={type === 'true_false'} onChange={() => setQuestionType('true_false')} /> True/False</label>
+                <label className="flex items-center gap-1.5"><input type="radio" checked={type === 'short_answer'} onChange={() => setQuestionType('short_answer')} /> Short answer (not auto-graded)</label>
+            </div>
+
+            <TextField label="Question" name="question" value={form.data.question} onChange={(e) => form.setData('question', e.target.value)} error={form.errors.question} />
+
+            {type !== 'short_answer' && (
+                <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-ink-900">Options (select the correct one)</p>
+                    {form.data.options.map((opt, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                            <input type="radio" name="quiz-correct" checked={opt.is_correct} onChange={() => updateOption(i, 'is_correct', true)} />
+                            <input
+                                type="text"
+                                value={opt.option_text}
+                                onChange={(e) => updateOption(i, 'option_text', e.target.value)}
+                                className="flex-1 rounded-md border border-ink-100 bg-white px-2 py-1 text-sm"
+                            />
+                        </div>
+                    ))}
+                    <button type="button" onClick={addOption} className="text-xs text-ink-500 hover:text-gold-600">+ Add option</button>
+                </div>
+            )}
+
+            <TextField label="Points" name="points" type="number" min={1} value={form.data.points} onChange={(e) => form.setData('points', Number(e.target.value))} error={form.errors.points} />
+
+            <Button type="submit" loading={form.processing} className="w-auto px-4">Add question</Button>
         </form>
     );
 }

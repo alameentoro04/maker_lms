@@ -1,0 +1,15 @@
+\App\Models\User::create([
+    'role_id' => 3,
+    'name' => 'John Instructor',
+    'email' => 'instructor@makers.al-ismail.com.ng',
+    'phone' => null,
+    'password' => 'ChangeMe!12345',
+    'status' => 'active',
+]);
+
+
+$user = \App\Models\User::where('email', 'instructor@makers.al-ismail.com.ng')->first();
+
+
+$user->email_verified_at = now();
+$user->save();

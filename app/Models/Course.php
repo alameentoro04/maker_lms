@@ -15,7 +15,7 @@ class Course extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'category_id', 'title', 'slug', 'summary', 'description', 'objectives',
+        'category_id', 'title', 'slug', 'certificate_code', 'summary', 'description', 'objectives',
         'requirements', 'level', 'duration_weeks', 'status', 'price', 'currency',
         'thumbnail_path',
     ];

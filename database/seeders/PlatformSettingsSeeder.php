@@ -20,6 +20,7 @@ class PlatformSettingsSeeder extends Seeder
             ['group' => 'cohorts', 'key' => 'allow_enrollment_after_start', 'value' => 'false', 'type' => 'boolean'],
             ['group' => 'cohorts', 'key' => 'default_live_platform', 'value' => 'google_meet', 'type' => 'string'],
             ['group' => 'certificates', 'key' => 'require_min_attendance_percent', 'value' => '', 'type' => 'integer'],
+            ['group' => 'certificates', 'key' => 'require_full_lesson_completion', 'value' => 'false', 'type' => 'boolean'],
             ['group' => 'certificates', 'key' => 'id_prefix', 'value' => 'MKR', 'type' => 'string'],
             ['group' => 'general', 'key' => 'support_email', 'value' => 'support@makers.al-ismail.com.ng', 'type' => 'string'],
             // Placeholder — replace with the real account before enabling bank transfer in production.

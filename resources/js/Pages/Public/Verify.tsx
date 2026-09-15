@@ -50,6 +50,12 @@ export default function Verify({ certificateId, result }: VerifyProps) {
                                 <dd className="font-medium text-ink-900">{result.issued_at}</dd>
                             </div>
                         </dl>
+                        <a
+                            href={route('verify.download', certificateId)}
+                            className="mt-4 inline-block text-sm text-ink-900 underline hover:text-gold-600"
+                        >
+                            Download PDF
+                        </a>
                     </div>
                 ) : (
                     <div className="mt-6 rounded-lg border border-ink-200 bg-ink-50 p-6">

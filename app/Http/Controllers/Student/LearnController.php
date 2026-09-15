@@ -7,6 +7,8 @@ use App\Models\AssignmentSubmission;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
 use App\Services\CourseAccessService;
 use App\Services\Video\VideoProviderInterface;
 use Illuminate\Http\RedirectResponse;
@@ -62,7 +64,7 @@ class LearnController extends Controller
             ->whereNotNull('completed_at')
             ->pluck('lesson_id');
 
-        $lesson->load('resources', 'assignment');
+        $lesson->load('resources', 'assignment', 'quiz.questions.options');
 
         $mySubmission = null;
         if ($lesson->assignment) {
@@ -81,6 +83,11 @@ class LearnController extends Controller
                 'has_file' => (bool) $latest->file_path,
                 'attempt_number' => $latest->attempt_number,
             ] : null;
+        }
+
+        $quizData = null;
+        if ($lesson->quiz) {
+            $quizData = $this->buildQuizPayload($lesson->quiz, $request->user()->id);
         }
 
         return Inertia::render('Student/Learn/Lesson', [
@@ -103,6 +110,7 @@ class LearnController extends Controller
                     'allow_resubmission' => $lesson->assignment->allow_resubmission,
                     'my_submission' => $mySubmission,
                 ] : null,
+                'quiz' => $quizData,
             ],
             'navigation' => [
                 'modules' => $course->modules->map(fn ($m) => [
@@ -118,6 +126,42 @@ class LearnController extends Controller
                 'next_lesson_id' => $currentIndex < $allLessons->count() - 1 ? $allLessons[$currentIndex + 1]->id : null,
             ],
         ]);
+    }
+
+    /**
+     * Never sends question content to the browser until the student has an
+     * in-progress attempt — and never sends `is_correct` on options at all,
+     * even then. Grading happens entirely server-side in QuizController.
+     */
+    private function buildQuizPayload(Quiz $quiz, int $userId): array
+    {
+        $attempts = QuizAttempt::query()->where('quiz_id', $quiz->id)->where('user_id', $userId)->orderByDesc('attempt_number')->get();
+        $inProgress = $attempts->firstWhere('submitted_at', null);
+        $latestSubmitted = $attempts->whereNotNull('submitted_at')->first();
+
+        return [
+            'id' => $quiz->id,
+            'passing_score' => $quiz->passing_score,
+            'time_limit_minutes' => $quiz->time_limit_minutes,
+            'attempt_limit' => $quiz->attempt_limit,
+            'attempts_used' => $attempts->count(),
+            'attempts_remaining' => max(0, $quiz->attempt_limit - $attempts->count()),
+            'in_progress_attempt' => $inProgress ? [
+                'id' => $inProgress->id,
+                'started_at' => $inProgress->started_at->toIso8601String(),
+                'questions' => $quiz->questions->map(fn ($q) => [
+                    'id' => $q->id,
+                    'type' => $q->type,
+                    'question' => $q->question,
+                    'options' => $q->options->map(fn ($o) => ['id' => $o->id, 'option_text' => $o->option_text]),
+                ]),
+            ] : null,
+            'latest_result' => (! $inProgress && $latestSubmitted) ? [
+                'score' => $latestSubmitted->score,
+                'passed' => $latestSubmitted->passed,
+                'submitted_at' => $latestSubmitted->submitted_at->toDayDateTimeString(),
+            ] : null,
+        ];
     }
 
     /**

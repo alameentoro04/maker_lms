@@ -66,7 +66,7 @@ class CourseController extends Controller
     {
         $this->authorize('update', $course);
 
-        $course->load(['instructors', 'modules.lessons.assignment']);
+        $course->load(['instructors', 'modules.lessons.assignment', 'modules.lessons.quiz.questions.options']);
 
         return Inertia::render('Admin/Courses/Form', [
             'course' => [
@@ -104,6 +104,20 @@ class CourseController extends Controller
                         'max_file_size_kb' => $l->assignment->max_file_size_kb,
                         'allow_resubmission' => $l->assignment->allow_resubmission,
                         'passing_score' => $l->assignment->passing_score,
+                    ] : null,
+                    'quiz' => $l->quiz ? [
+                        'id' => $l->quiz->id,
+                        'passing_score' => $l->quiz->passing_score,
+                        'time_limit_minutes' => $l->quiz->time_limit_minutes,
+                        'attempt_limit' => $l->quiz->attempt_limit,
+                        'randomize_questions' => $l->quiz->randomize_questions,
+                        'questions' => $l->quiz->questions->map(fn ($q) => [
+                            'id' => $q->id,
+                            'type' => $q->type,
+                            'question' => $q->question,
+                            'points' => $q->points,
+                            'options' => $q->options->map(fn ($o) => ['option_text' => $o->option_text, 'is_correct' => $o->is_correct]),
+                        ]),
                     ] : null,
                 ]),
             ]),

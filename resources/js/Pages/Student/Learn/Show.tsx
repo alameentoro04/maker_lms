@@ -30,14 +30,19 @@ export default function Show({ course, modules }: { course: { title: string; slu
                         {completedCount} of {allLessons.length} lessons complete
                     </p>
                 </div>
-                {firstIncomplete && (
-                    <Link
-                        href={route('learn.lesson', [course.slug, firstIncomplete.id])}
-                        className="rounded-md bg-ink-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-ink-700"
-                    >
-                        {completedCount === 0 ? 'Start course' : 'Continue'}
+                <div className="flex items-center gap-3">
+                    <Link href={route('learn.exam.show', course.slug)} className="text-sm font-medium text-ink-700 hover:text-gold-600">
+                        Final exam
                     </Link>
-                )}
+                    {firstIncomplete && (
+                        <Link
+                            href={route('learn.lesson', [course.slug, firstIncomplete.id])}
+                            className="rounded-md bg-ink-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-ink-700"
+                        >
+                            {completedCount === 0 ? 'Start course' : 'Continue'}
+                        </Link>
+                    )}
+                </div>
             </div>
 
             <div className="mt-8 space-y-6">

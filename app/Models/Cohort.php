@@ -52,6 +52,11 @@ class Cohort extends Model
         return $this->hasMany(Enrollment::class);
     }
 
+    public function exam(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Exam::class);
+    }
+
     public function activeEnrollmentCount(): int
     {
         return $this->enrollments()->whereIn('status', ['pending', 'active', 'completed'])->count();

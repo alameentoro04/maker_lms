@@ -2,17 +2,21 @@
 
 use App\Http\Controllers\Admin\AssignmentController as AdminAssignmentController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnrollmentController as AdminEnrollmentController;
+use App\Http\Controllers\Admin\ExamController as AdminExamController;
 use App\Http\Controllers\Admin\LessonController as AdminLessonController;
 use App\Http\Controllers\Admin\ManualPaymentController as AdminManualPaymentController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
+use App\Http\Controllers\Admin\QuizController as AdminQuizController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Instructor\AssignmentController as InstructorAssignmentController;
 use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
 use App\Http\Controllers\Instructor\SubmissionController as InstructorSubmissionController;
+use App\Http\Controllers\Public\CertificatePdfController;
 use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\CohortController;
 use App\Http\Controllers\Public\CourseController;
@@ -24,7 +28,9 @@ use App\Http\Controllers\Student\AssignmentController as StudentAssignmentContro
 use App\Http\Controllers\Student\BankTransferController;
 use App\Http\Controllers\Student\CheckoutController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\LearnController;
+use App\Http\Controllers\Student\QuizController as StudentQuizController;
 use App\Http\Controllers\Student\VideoStreamController;
 use App\Http\Controllers\Webhooks\FlutterwaveWebhookController;
 use App\Http\Controllers\Webhooks\PaystackWebhookController;
@@ -32,6 +38,8 @@ use App\Models\Role;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+Route::get('/verify/{certificateId}/download', CertificatePdfController::class)->name('verify.download');
+
 
 Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
 Route::get('/courses/{course:slug}', [CourseController::class, 'show'])->name('courses.show');
@@ -68,6 +76,14 @@ Route::middleware(['auth', 'verified', 'role:'.Role::SUPER_ADMIN.','.Role::ADMIN
         Route::get('payments/manual/{submission}/proof', [AdminManualPaymentController::class, 'downloadProof'])->name('payments.manual.download');
         Route::post('payments/manual/{submission}/approve', [AdminManualPaymentController::class, 'approve'])->name('payments.manual.approve');
         Route::post('payments/manual/{submission}/reject', [AdminManualPaymentController::class, 'reject'])->name('payments.manual.reject');
+
+        Route::get('cohorts/{cohort}/exam', [AdminExamController::class, 'edit'])->name('cohorts.exam.edit');
+        Route::put('cohorts/{cohort}/exam', [AdminExamController::class, 'upsert'])->name('cohorts.exam.upsert');
+        Route::post('exams/{exam}/questions', [AdminExamController::class, 'storeQuestion'])->name('exams.questions.store');
+        Route::delete('exams/{exam}/questions/{question}', [AdminExamController::class, 'destroyQuestion'])->name('exams.questions.destroy');
+
+        Route::get('certificates', [AdminCertificateController::class, 'index'])->name('certificates.index');
+        Route::post('certificates/{certificate}/revoke', [AdminCertificateController::class, 'revoke'])->name('certificates.revoke');
         // Users, etc. routes land in their respective phases.
     });
 
@@ -86,6 +102,9 @@ Route::middleware(['auth', 'verified', 'role:'.Role::SUPER_ADMIN.','.Role::ADMIN
         Route::put('courses/{course}/modules/{module}/lessons/{lesson}', [AdminLessonController::class, 'update'])->name('courses.modules.lessons.update');
         Route::delete('courses/{course}/modules/{module}/lessons/{lesson}', [AdminLessonController::class, 'destroy'])->name('courses.modules.lessons.destroy');
         Route::put('courses/{course}/modules/{module}/lessons/{lesson}/assignment', [AdminAssignmentController::class, 'upsert'])->name('courses.modules.lessons.assignment');
+        Route::put('courses/{course}/modules/{module}/lessons/{lesson}/quiz', [AdminQuizController::class, 'upsert'])->name('courses.modules.lessons.quiz');
+        Route::post('quizzes/{quiz}/questions', [AdminQuizController::class, 'storeQuestion'])->name('quizzes.questions.store');
+        Route::delete('quizzes/{quiz}/questions/{question}', [AdminQuizController::class, 'destroyQuestion'])->name('quizzes.questions.destroy');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.Role::INSTRUCTOR])
@@ -119,6 +138,13 @@ Route::middleware(['auth', 'verified'])
         Route::post('assignments/{assignment}/submit', [StudentAssignmentController::class, 'submit'])->name('assignments.submit');
         Route::get('submissions/{submission}/download', [StudentAssignmentController::class, 'downloadSubmissionFile'])->name('submissions.download');
         Route::get('video/{reference}/mock-stream', VideoStreamController::class)->middleware('signed')->name('video.mock-stream');
+
+        Route::post('quizzes/{quiz}/attempts', [StudentQuizController::class, 'start'])->name('quizzes.start');
+        Route::post('quizzes/attempts/{attempt}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
+
+        Route::get('{course:slug}/exam', [StudentExamController::class, 'show'])->name('exam.show');
+        Route::post('{course:slug}/exam/start', [StudentExamController::class, 'start'])->name('exam.start');
+        Route::post('exams/attempts/{attempt}/submit', [StudentExamController::class, 'submit'])->name('exam.submit');
     });
 
 // Checkout is student-only — admins/instructors have no reason to buy a seat.

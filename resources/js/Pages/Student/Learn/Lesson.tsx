@@ -27,6 +27,24 @@ interface Submission {
     attempt_number: number;
 }
 
+interface QuizQuestionForStudent {
+    id: number;
+    type: string;
+    question: string;
+    options: { id: number; option_text: string }[];
+}
+
+interface QuizData {
+    id: number;
+    passing_score: number;
+    time_limit_minutes: number | null;
+    attempt_limit: number;
+    attempts_used: number;
+    attempts_remaining: number;
+    in_progress_attempt: { id: number; started_at: string; questions: QuizQuestionForStudent[] } | null;
+    latest_result: { score: number; passed: boolean; submitted_at: string } | null;
+}
+
 interface LessonProps {
     course: { title: string; slug: string };
     lesson: {
@@ -45,6 +63,7 @@ interface LessonProps {
             allow_resubmission: boolean;
             my_submission: Submission | null;
         } | null;
+        quiz: QuizData | null;
     };
     navigation: {
         modules: NavModule[];
@@ -137,11 +156,7 @@ export default function Lesson({ course, lesson, navigation }: LessonProps) {
 
                     {lesson.assignment && <AssignmentPanel assignment={lesson.assignment} />}
 
-                    {(lesson.type === 'quiz') && (
-                        <p className="mt-6 rounded-md bg-ink-50 px-4 py-3 text-sm text-ink-500">
-                            Quizzes are not implemented yet (Phase 6).
-                        </p>
-                    )}
+                    {lesson.quiz && <QuizPanel quiz={lesson.quiz} />}
 
                     <div className="mt-8 flex items-center justify-between border-t border-ink-100 pt-6">
                         {navigation.previous_lesson_id ? (
@@ -242,6 +257,70 @@ function AssignmentPanel({ assignment }: { assignment: NonNullable<LessonProps['
                         {assignment.my_submission ? 'Resubmit' : 'Submit assignment'}
                     </Button>
                 </form>
+            )}
+        </div>
+    );
+}
+
+function QuizPanel({ quiz }: { quiz: QuizData }) {
+    const [answers, setAnswers] = useState<Record<number, number>>({});
+    const [starting, setStarting] = useState(false);
+    const submitForm = useForm({});
+
+    const start = () => {
+        setStarting(true);
+        router.post(route('learn.quizzes.start', quiz.id), {}, { preserveScroll: true, onFinish: () => setStarting(false) });
+    };
+
+    const submit = () => {
+        submitForm.transform(() => ({ answers }));
+        submitForm.post(route('learn.quizzes.submit', quiz.in_progress_attempt!.id), { preserveScroll: true });
+    };
+
+    return (
+        <div className="mt-8 rounded-lg border border-ink-100 bg-white p-5">
+            <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-ink-900">Quiz</h2>
+                <span className="text-xs text-ink-500">
+                    Pass: {quiz.passing_score}% · {quiz.attempts_remaining} of {quiz.attempt_limit} attempt(s) left
+                </span>
+            </div>
+
+            {quiz.latest_result && (
+                <div className={`mt-3 rounded-md p-3 text-sm ${quiz.latest_result.passed ? 'bg-green-50 text-green-700' : 'bg-ink-50 text-ink-700'}`}>
+                    {quiz.latest_result.passed ? 'Passed' : 'Not passed'} — {quiz.latest_result.score}% ({quiz.latest_result.submitted_at})
+                </div>
+            )}
+
+            {quiz.in_progress_attempt ? (
+                <div className="mt-4 space-y-5">
+                    {quiz.in_progress_attempt.questions.map((q, i) => (
+                        <div key={q.id}>
+                            <p className="text-sm font-medium text-ink-900">{i + 1}. {q.question}</p>
+                            <div className="mt-2 space-y-1.5">
+                                {q.options.map((opt) => (
+                                    <label key={opt.id} className="flex items-center gap-2 text-sm text-ink-700">
+                                        <input
+                                            type="radio"
+                                            name={`q-${q.id}`}
+                                            checked={answers[q.id] === opt.id}
+                                            onChange={() => setAnswers((a) => ({ ...a, [q.id]: opt.id }))}
+                                            className="text-gold-500 focus:ring-gold-500/40"
+                                        />
+                                        {opt.option_text}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                    <Button onClick={submit} loading={submitForm.processing} className="w-auto px-5">Submit quiz</Button>
+                </div>
+            ) : (
+                quiz.attempts_remaining > 0 && (
+                    <Button onClick={start} loading={starting} className="mt-4 w-auto px-5">
+                        {quiz.latest_result ? 'Retake quiz' : 'Start quiz'}
+                    </Button>
+                )
             )}
         </div>
     );
