@@ -1,8 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import PublicLayout from '@/Layouts/PublicLayout';
+import { PageProps } from '@/types';
 
 interface CohortShowProps {
     cohort: {
+        slug: string;
         name: string;
         start_date: string;
         end_date: string;
@@ -17,6 +19,7 @@ interface CohortShowProps {
 }
 
 export default function Show({ cohort, course, instructors }: CohortShowProps) {
+    const { auth } = usePage<PageProps>().props;
     return (
         <PublicLayout>
             <Head title={cohort.name} />
@@ -68,16 +71,28 @@ export default function Show({ cohort, course, instructors }: CohortShowProps) {
                 <div className="mt-10 rounded-lg border border-ink-100 bg-ink-50 p-6">
                     {cohort.accepting_enrollment ? (
                         <>
-                            <p className="text-sm text-ink-700">
-                                Enrollment is open for this cohort. Create an account to reserve your spot —
-                                payment and checkout are being finalized (Phase 5).
-                            </p>
-                            <Link
-                                href={route('register')}
-                                className="mt-4 inline-block rounded-md bg-ink-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-ink-700"
-                            >
-                                Create an account to enroll
-                            </Link>
+                            <p className="text-sm text-ink-700">Enrollment is open for this cohort.</p>
+                            {!auth.user && (
+                                <Link
+                                    href={route('register')}
+                                    className="mt-4 inline-block rounded-md bg-ink-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-ink-700"
+                                >
+                                    Create an account to enroll
+                                </Link>
+                            )}
+                            {auth.user && auth.user.role === 'student' && (
+                                <Link
+                                    href={route('checkout.create', cohort.slug)}
+                                    className="mt-4 inline-block rounded-md bg-gold-500 px-5 py-2.5 text-sm font-medium text-ink-900 hover:bg-gold-400"
+                                >
+                                    {course.price === 'Free' ? 'Enroll — free' : `Enroll — ${course.price}`}
+                                </Link>
+                            )}
+                            {auth.user && auth.user.role !== 'student' && (
+                                <p className="mt-2 text-sm text-ink-500">
+                                    Signed in as {auth.user.role} — checkout is for student accounts.
+                                </p>
+                            )}
                         </>
                     ) : (
                         <p className="text-sm text-ink-500">

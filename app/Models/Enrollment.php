@@ -15,7 +15,7 @@ class Enrollment extends Model
     public const STATUSES = ['pending', 'active', 'completed', 'cancelled', 'suspended', 'expired'];
 
     protected $fillable = [
-        'user_id', 'course_id', 'cohort_id', 'status', 'enrolled_at', 'access_starts_at',
+        'user_id', 'course_id', 'cohort_id', 'order_id', 'status', 'enrolled_at', 'access_starts_at',
         'access_ends_at', 'completed_at', 'enrolled_by', 'is_override',
     ];
 
@@ -43,6 +43,11 @@ class Enrollment extends Model
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     public function enrolledBy(): BelongsTo

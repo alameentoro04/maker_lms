@@ -6,13 +6,14 @@ use App\Exceptions\EnrollmentNotAllowedException;
 use App\Models\Cohort;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusHistory;
+use App\Models\Order;
 use App\Models\PlatformSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
  * The single entry point for creating an enrollment. Every enrollment path —
- * this Phase's admin "manually enroll" action, and Phase 5's payment-webhook
+ * Phase 3's admin "manually enroll" action, and Phase 5's payment-webhook
  * activation — MUST go through here rather than creating Enrollment rows
  * directly, so the capacity/deadline/duplicate rules are enforced exactly
  * once, in exactly one place.
@@ -38,8 +39,9 @@ class EnrollStudentAction
         ?User $actor = null,
         bool $override = false,
         string $initialStatus = 'active',
+        ?Order $order = null,
     ): Enrollment {
-        return DB::transaction(function () use ($student, $cohort, $actor, $override, $initialStatus) {
+        return DB::transaction(function () use ($student, $cohort, $actor, $override, $initialStatus, $order) {
             // Lock the cohort row for the duration of the transaction so two
             // concurrent enrollments can't both slip in under the capacity limit.
             $cohort = Cohort::query()->lockForUpdate()->findOrFail($cohort->id);
@@ -56,6 +58,7 @@ class EnrollStudentAction
                 'user_id' => $student->id,
                 'course_id' => $cohort->course_id,
                 'cohort_id' => $cohort->id,
+                'order_id' => $order?->id,
                 'status' => $initialStatus,
                 'enrolled_at' => now(),
                 'access_starts_at' => now(),

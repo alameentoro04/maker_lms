@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnrollmentController as AdminEnrollmentController;
 use App\Http\Controllers\Admin\LessonController as AdminLessonController;
+use App\Http\Controllers\Admin\ManualPaymentController as AdminManualPaymentController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Instructor\AssignmentController as InstructorAssignmentController;
@@ -20,9 +21,13 @@ use App\Http\Controllers\Public\InstructorController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\ShowcaseController;
 use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
+use App\Http\Controllers\Student\BankTransferController;
+use App\Http\Controllers\Student\CheckoutController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\LearnController;
 use App\Http\Controllers\Student\VideoStreamController;
+use App\Http\Controllers\Webhooks\FlutterwaveWebhookController;
+use App\Http\Controllers\Webhooks\PaystackWebhookController;
 use App\Models\Role;
 use Illuminate\Support\Facades\Route;
 
@@ -58,7 +63,12 @@ Route::middleware(['auth', 'verified', 'role:'.Role::SUPER_ADMIN.','.Role::ADMIN
 
         Route::get('enrollments', [AdminEnrollmentController::class, 'index'])->name('enrollments.index');
         Route::post('enrollments', [AdminEnrollmentController::class, 'store'])->name('enrollments.store');
-        // Users, payments, etc. routes land in their respective phases.
+
+        Route::get('payments/manual', [AdminManualPaymentController::class, 'index'])->name('payments.manual.index');
+        Route::get('payments/manual/{submission}/proof', [AdminManualPaymentController::class, 'downloadProof'])->name('payments.manual.download');
+        Route::post('payments/manual/{submission}/approve', [AdminManualPaymentController::class, 'approve'])->name('payments.manual.approve');
+        Route::post('payments/manual/{submission}/reject', [AdminManualPaymentController::class, 'reject'])->name('payments.manual.reject');
+        // Users, etc. routes land in their respective phases.
     });
 
 // Course/module/lesson management is shared with Instructor accounts — CoursePolicy
@@ -110,5 +120,23 @@ Route::middleware(['auth', 'verified'])
         Route::get('submissions/{submission}/download', [StudentAssignmentController::class, 'downloadSubmissionFile'])->name('submissions.download');
         Route::get('video/{reference}/mock-stream', VideoStreamController::class)->middleware('signed')->name('video.mock-stream');
     });
+
+// Checkout is student-only — admins/instructors have no reason to buy a seat.
+Route::middleware(['auth', 'verified', 'role:'.Role::STUDENT])
+    ->prefix('checkout')
+    ->name('checkout.')
+    ->group(function () {
+        Route::get('{cohort:slug}', [CheckoutController::class, 'create'])->name('create');
+        Route::post('{cohort:slug}', [CheckoutController::class, 'store'])->name('store');
+        Route::get('callback/{provider}', [CheckoutController::class, 'callback'])->name('callback');
+        Route::get('bank-transfer/{order}', [CheckoutController::class, 'showBankTransfer'])->name('bank-transfer');
+        Route::post('bank-transfer/{order}/proof', [BankTransferController::class, 'submitProof'])->name('bank-transfer.proof');
+    });
+
+// Provider-to-server callbacks — no session, no CSRF token; authenticated by
+// signature verification inside each controller instead. Exempted from CSRF
+// in bootstrap/app.php.
+Route::post('webhooks/paystack', PaystackWebhookController::class)->name('webhooks.paystack');
+Route::post('webhooks/flutterwave', FlutterwaveWebhookController::class)->name('webhooks.flutterwave');
 
 require __DIR__.'/auth.php';

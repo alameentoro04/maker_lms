@@ -22,6 +22,10 @@ class PlatformSettingsSeeder extends Seeder
             ['group' => 'certificates', 'key' => 'require_min_attendance_percent', 'value' => '', 'type' => 'integer'],
             ['group' => 'certificates', 'key' => 'id_prefix', 'value' => 'MKR', 'type' => 'string'],
             ['group' => 'general', 'key' => 'support_email', 'value' => 'support@makers.al-ismail.com.ng', 'type' => 'string'],
+            // Placeholder — replace with the real account before enabling bank transfer in production.
+            ['group' => 'payments', 'key' => 'bank_name', 'value' => 'Not yet configured', 'type' => 'string'],
+            ['group' => 'payments', 'key' => 'account_name', 'value' => 'Not yet configured', 'type' => 'string'],
+            ['group' => 'payments', 'key' => 'account_number', 'value' => 'Not yet configured', 'type' => 'string'],
         ];
 
         foreach ($defaults as $setting) {

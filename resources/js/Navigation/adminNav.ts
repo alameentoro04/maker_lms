@@ -5,4 +5,5 @@ export const adminNav = () => [
     { label: 'Categories', href: route('admin.categories.index') },
     { label: 'Cohorts', href: route('admin.cohorts.index') },
     { label: 'Enrollments', href: route('admin.enrollments.index') },
+    { label: 'Manual payments', href: route('admin.payments.manual.index') },
 ];
