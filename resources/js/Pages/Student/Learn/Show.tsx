@@ -14,7 +14,13 @@ interface ModuleRow {
     lessons: LessonRow[];
 }
 
-export default function Show({ course, modules }: { course: { title: string; slug: string }; modules: ModuleRow[] }) {
+interface ShowProps {
+    course: { title: string; slug: string };
+    modules: ModuleRow[];
+    cohortId: number | null;
+}
+
+export default function Show({ course, modules, cohortId }: ShowProps) {
     const allLessons = modules.flatMap((m) => m.lessons);
     const completedCount = allLessons.filter((l) => l.completed).length;
     const firstIncomplete = allLessons.find((l) => !l.completed) ?? allLessons[0];
@@ -31,6 +37,14 @@ export default function Show({ course, modules }: { course: { title: string; slu
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
+                    {cohortId && (
+                        <Link href={route('community.cohort', cohortId)} className="text-sm font-medium text-ink-700 hover:text-gold-600">
+                            Discussion
+                        </Link>
+                    )}
+                    <Link href={route('learn.live-classes.index', course.slug)} className="text-sm font-medium text-ink-700 hover:text-gold-600">
+                        Live classes
+                    </Link>
                     <Link href={route('learn.exam.show', course.slug)} className="text-sm font-medium text-ink-700 hover:text-gold-600">
                         Final exam
                     </Link>

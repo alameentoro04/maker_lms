@@ -32,8 +32,11 @@ class LearnController extends Controller
             ->whereNotNull('completed_at')
             ->pluck('lesson_id');
 
+        $enrollment = $this->access->activeEnrollmentFor($request->user(), $course);
+
         return Inertia::render('Student/Learn/Show', [
             'course' => ['title' => $course->title, 'slug' => $course->slug],
+            'cohortId' => $enrollment?->cohort_id,
             'modules' => $course->modules->map(fn ($m) => [
                 'id' => $m->id,
                 'title' => $m->title,

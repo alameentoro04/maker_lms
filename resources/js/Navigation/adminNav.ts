@@ -7,4 +7,6 @@ export const adminNav = () => [
     { label: 'Enrollments', href: route('admin.enrollments.index') },
     { label: 'Manual payments', href: route('admin.payments.manual.index') },
     { label: 'Certificates', href: route('admin.certificates.index') },
+    { label: 'Moderation', href: route('admin.moderation.index') },
+    { label: 'Showcase', href: route('admin.showcase.index') },
 ];

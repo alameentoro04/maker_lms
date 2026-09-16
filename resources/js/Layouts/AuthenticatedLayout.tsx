@@ -52,7 +52,13 @@ export default function AuthenticatedLayout({
                         ))}
                     </nav>
                     <div className="mt-auto px-3 py-4 border-t border-ink-100">
-                        <p className="px-3 text-xs text-ink-500 truncate">{auth.user?.email}</p>
+                        <Link href={route('community.index')} className="block rounded-md px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50">
+                            Community
+                        </Link>
+                        <Link href={route('notifications.index')} className="block rounded-md px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50">
+                            Notifications
+                        </Link>
+                        <p className="mt-2 px-3 text-xs text-ink-500 truncate">{auth.user?.email}</p>
                         <Link
                             href={route('logout')}
                             method="post"

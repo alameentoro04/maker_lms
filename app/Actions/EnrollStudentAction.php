@@ -9,6 +9,7 @@ use App\Models\EnrollmentStatusHistory;
 use App\Models\Order;
 use App\Models\PlatformSetting;
 use App\Models\User;
+use App\Notifications\EnrollmentConfirmed;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -73,6 +74,10 @@ class EnrollStudentAction
                 'changed_by' => $actor?->id,
                 'note' => $override ? 'Enrolled with admin override' : 'Enrolled',
             ]);
+
+            if ($initialStatus === 'active') {
+                $student->notify(new EnrollmentConfirmed($enrollment));
+            }
 
             return $enrollment;
         });

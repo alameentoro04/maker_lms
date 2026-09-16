@@ -12,7 +12,10 @@ interface EnrollmentCard {
     next_lesson_title: string | null;
 }
 
-const nav = [{ label: 'Dashboard', href: route('student.dashboard') }];
+const nav = [
+    { label: 'Dashboard', href: route('student.dashboard') },
+    { label: 'Showcase', href: route('student.showcase.index') },
+];
 
 export default function Dashboard({ enrollments }: { enrollments: EnrollmentCard[] }) {
     return (

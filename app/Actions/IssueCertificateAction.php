@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\Certificate;
 use App\Models\Enrollment;
 use App\Models\PlatformSetting;
+use App\Notifications\CertificateIssued;
 use App\Services\CertificateEligibilityService;
 use Illuminate\Support\Facades\DB;
 
@@ -35,7 +36,7 @@ class IssueCertificateAction
             $course = $enrollment->course;
             $cohort = $enrollment->cohort;
 
-            return Certificate::query()->create([
+            $certificate = Certificate::query()->create([
                 'certificate_id' => $this->generateCertificateId($course),
                 'enrollment_id' => $enrollment->id,
                 'exam_attempt_id' => $passingAttempt?->id,
@@ -46,6 +47,10 @@ class IssueCertificateAction
                 'issued_at' => now(),
                 'status' => 'active',
             ]);
+
+            $enrollment->user->notify(new CertificateIssued($certificate));
+
+            return $certificate;
         });
     }
 

@@ -9,13 +9,18 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnrollmentController as AdminEnrollmentController;
 use App\Http\Controllers\Admin\ExamController as AdminExamController;
 use App\Http\Controllers\Admin\LessonController as AdminLessonController;
+use App\Http\Controllers\Admin\LiveClassController as AdminLiveClassController;
 use App\Http\Controllers\Admin\ManualPaymentController as AdminManualPaymentController;
+use App\Http\Controllers\Admin\ModerationController as AdminModerationController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Admin\QuizController as AdminQuizController;
+use App\Http\Controllers\Admin\ShowcaseModerationController;
+use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Instructor\AssignmentController as InstructorAssignmentController;
 use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
 use App\Http\Controllers\Instructor\SubmissionController as InstructorSubmissionController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Public\CertificatePdfController;
 use App\Http\Controllers\Public\CertificateVerificationController;
 use App\Http\Controllers\Public\CohortController;
@@ -30,7 +35,9 @@ use App\Http\Controllers\Student\CheckoutController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\LearnController;
+use App\Http\Controllers\Student\LiveClassController as StudentLiveClassController;
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
+use App\Http\Controllers\Student\ShowcaseController as StudentShowcaseController;
 use App\Http\Controllers\Student\VideoStreamController;
 use App\Http\Controllers\Webhooks\FlutterwaveWebhookController;
 use App\Http\Controllers\Webhooks\PaystackWebhookController;
@@ -84,6 +91,14 @@ Route::middleware(['auth', 'verified', 'role:'.Role::SUPER_ADMIN.','.Role::ADMIN
 
         Route::get('certificates', [AdminCertificateController::class, 'index'])->name('certificates.index');
         Route::post('certificates/{certificate}/revoke', [AdminCertificateController::class, 'revoke'])->name('certificates.revoke');
+
+        Route::get('moderation', [AdminModerationController::class, 'index'])->name('moderation.index');
+        Route::post('moderation/{report}/hide', [AdminModerationController::class, 'hide'])->name('moderation.hide');
+        Route::post('moderation/{report}/dismiss', [AdminModerationController::class, 'dismiss'])->name('moderation.dismiss');
+
+        Route::get('showcase', [ShowcaseModerationController::class, 'index'])->name('showcase.index');
+        Route::post('showcase/{showcase}/approve', [ShowcaseModerationController::class, 'approve'])->name('showcase.approve');
+        Route::post('showcase/{showcase}/reject', [ShowcaseModerationController::class, 'reject'])->name('showcase.reject');
         // Users, etc. routes land in their respective phases.
     });
 
@@ -105,6 +120,13 @@ Route::middleware(['auth', 'verified', 'role:'.Role::SUPER_ADMIN.','.Role::ADMIN
         Route::put('courses/{course}/modules/{module}/lessons/{lesson}/quiz', [AdminQuizController::class, 'upsert'])->name('courses.modules.lessons.quiz');
         Route::post('quizzes/{quiz}/questions', [AdminQuizController::class, 'storeQuestion'])->name('quizzes.questions.store');
         Route::delete('quizzes/{quiz}/questions/{question}', [AdminQuizController::class, 'destroyQuestion'])->name('quizzes.questions.destroy');
+
+        Route::get('cohorts/{cohort}/live-classes', [AdminLiveClassController::class, 'index'])->name('cohorts.live-classes.index');
+        Route::post('cohorts/{cohort}/live-classes', [AdminLiveClassController::class, 'store'])->name('cohorts.live-classes.store');
+        Route::put('cohorts/{cohort}/live-classes/{liveClass}', [AdminLiveClassController::class, 'update'])->name('cohorts.live-classes.update');
+        Route::delete('cohorts/{cohort}/live-classes/{liveClass}', [AdminLiveClassController::class, 'destroy'])->name('cohorts.live-classes.destroy');
+        Route::get('cohorts/{cohort}/live-classes/{liveClass}/attendance', [AdminLiveClassController::class, 'attendance'])->name('cohorts.live-classes.attendance');
+        Route::post('live-classes/{liveClass}/attendance', [AdminLiveClassController::class, 'markAttendance'])->name('live-classes.attendance.mark');
     });
 
 Route::middleware(['auth', 'verified', 'role:'.Role::INSTRUCTOR])
@@ -123,6 +145,9 @@ Route::middleware(['auth', 'verified', 'role:'.Role::STUDENT])
     ->name('student.')
     ->group(function () {
         Route::get('/dashboard', StudentDashboardController::class)->name('dashboard');
+
+        Route::get('showcase', [StudentShowcaseController::class, 'index'])->name('showcase.index');
+        Route::post('showcase', [StudentShowcaseController::class, 'store'])->name('showcase.store');
     });
 
 // The course player is shared across every authenticated role (students learn;
@@ -145,7 +170,24 @@ Route::middleware(['auth', 'verified'])
         Route::get('{course:slug}/exam', [StudentExamController::class, 'show'])->name('exam.show');
         Route::post('{course:slug}/exam/start', [StudentExamController::class, 'start'])->name('exam.start');
         Route::post('exams/attempts/{attempt}/submit', [StudentExamController::class, 'submit'])->name('exam.submit');
+
+        Route::get('{course:slug}/live-classes', [StudentLiveClassController::class, 'index'])->name('live-classes.index');
+        Route::post('live-classes/{liveClass}/join', [StudentLiveClassController::class, 'join'])->name('live-classes.join');
     });
+
+// Community + notifications are open to any authenticated, verified role —
+// fine-grained cohort access is checked inside CommunityController itself.
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('community', [CommunityController::class, 'index'])->name('community.index');
+    Route::post('community', [CommunityController::class, 'store'])->name('community.store');
+    Route::get('community/cohort/{cohort}', [CommunityController::class, 'index'])->name('community.cohort');
+    Route::post('community/cohort/{cohort}', [CommunityController::class, 'store'])->name('community.cohort.store');
+    Route::post('community/posts/{post}/comments', [CommunityController::class, 'storeComment'])->name('community.comments.store');
+    Route::post('community/posts/{post}/report', [CommunityController::class, 'report'])->name('community.report');
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/{notificationId}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+});
 
 // Checkout is student-only — admins/instructors have no reason to buy a seat.
 Route::middleware(['auth', 'verified', 'role:'.Role::STUDENT])

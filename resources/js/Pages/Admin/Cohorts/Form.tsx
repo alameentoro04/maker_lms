@@ -79,9 +79,14 @@ export default function Form({ cohort, courses, statuses, instructors }: FormPro
                 ← All cohorts
             </Link>
             {isEditing && (
-                <Link href={route('admin.cohorts.exam.edit', cohort!.id)} className="ml-4 text-sm text-ink-500 hover:text-gold-600">
-                    Configure final exam →
-                </Link>
+                <>
+                    <Link href={route('admin.cohorts.exam.edit', cohort!.id)} className="ml-4 text-sm text-ink-500 hover:text-gold-600">
+                        Configure final exam →
+                    </Link>
+                    <Link href={route('admin.cohorts.live-classes.index', cohort!.id)} className="ml-4 text-sm text-ink-500 hover:text-gold-600">
+                        Live classes →
+                    </Link>
+                </>
             )}
 
             <form onSubmit={submit} className="mt-4 max-w-2xl space-y-4">

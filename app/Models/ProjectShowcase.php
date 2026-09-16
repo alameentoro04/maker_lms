@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 class ProjectShowcase extends Model
 {
     protected $fillable = [
-        'course_id', 'author_name', 'title', 'description', 'image_path',
+        'course_id', 'submitted_by', 'author_name', 'title', 'description', 'image_path',
         'external_url', 'is_published', 'order',
     ];
 
@@ -21,6 +21,11 @@ class ProjectShowcase extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
     }
 
     public function scopePublished(Builder $query): Builder
