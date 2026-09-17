@@ -53,6 +53,28 @@ class Course extends Model
         return $this->hasMany(Enrollment::class);
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(CourseReview::class);
+    }
+
+    public function questions(): HasMany
+    {
+        return $this->hasMany(CourseQuestion::class);
+    }
+
+    public function averageRating(): ?float
+    {
+        $avg = $this->reviews()->published()->avg('rating');
+
+        return $avg ? round($avg, 1) : null;
+    }
+
+    public function reviewCount(): int
+    {
+        return $this->reviews()->published()->count();
+    }
+
     public function instructors(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'course_instructor');

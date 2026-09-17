@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AssignmentController as AdminAssignmentController
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CertificateController as AdminCertificateController;
 use App\Http\Controllers\Admin\CohortController as AdminCohortController;
+use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EnrollmentController as AdminEnrollmentController;
@@ -13,9 +14,12 @@ use App\Http\Controllers\Admin\LiveClassController as AdminLiveClassController;
 use App\Http\Controllers\Admin\ManualPaymentController as AdminManualPaymentController;
 use App\Http\Controllers\Admin\ModerationController as AdminModerationController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
+use App\Http\Controllers\Admin\PackageController as AdminPackageController;
 use App\Http\Controllers\Admin\QuizController as AdminQuizController;
 use App\Http\Controllers\Admin\ShowcaseModerationController;
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\CourseBookmarkController;
+use App\Http\Controllers\CourseQuestionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Instructor\AssignmentController as InstructorAssignmentController;
 use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
@@ -27,11 +31,15 @@ use App\Http\Controllers\Public\CohortController;
 use App\Http\Controllers\Public\CourseController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\InstructorController;
+use App\Http\Controllers\Public\PackageController as PublicPackageController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\ShowcaseController;
 use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
 use App\Http\Controllers\Student\BankTransferController;
+use App\Http\Controllers\Student\CartCheckoutController;
+use App\Http\Controllers\Student\CartController;
 use App\Http\Controllers\Student\CheckoutController;
+use App\Http\Controllers\Student\CourseReviewController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\LearnController;
@@ -53,6 +61,8 @@ Route::get('/courses/{course:slug}', [CourseController::class, 'show'])->name('c
 Route::get('/cohorts/{cohort:slug}', [CohortController::class, 'show'])->name('cohorts.show');
 Route::get('/instructors/{user}', [InstructorController::class, 'show'])->name('instructors.show');
 Route::get('/showcase', [ShowcaseController::class, 'index'])->name('showcase.index');
+Route::get('/packages', [PublicPackageController::class, 'index'])->name('packages.index');
+Route::get('/packages/{package:slug}', [PublicPackageController::class, 'show'])->name('packages.show');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::post('/contact', [PageController::class, 'submitContact'])->name('contact.submit');
@@ -99,6 +109,12 @@ Route::middleware(['auth', 'verified', 'role:'.Role::SUPER_ADMIN.','.Role::ADMIN
         Route::get('showcase', [ShowcaseModerationController::class, 'index'])->name('showcase.index');
         Route::post('showcase/{showcase}/approve', [ShowcaseModerationController::class, 'approve'])->name('showcase.approve');
         Route::post('showcase/{showcase}/reject', [ShowcaseModerationController::class, 'reject'])->name('showcase.reject');
+
+        Route::resource('packages', AdminPackageController::class)->except(['show']);
+
+        Route::get('coupons', [AdminCouponController::class, 'index'])->name('coupons.index');
+        Route::post('coupons', [AdminCouponController::class, 'store'])->name('coupons.store');
+        Route::delete('coupons/{coupon}', [AdminCouponController::class, 'destroy'])->name('coupons.destroy');
         // Users, etc. routes land in their respective phases.
     });
 
@@ -148,6 +164,14 @@ Route::middleware(['auth', 'verified', 'role:'.Role::STUDENT])
 
         Route::get('showcase', [StudentShowcaseController::class, 'index'])->name('showcase.index');
         Route::post('showcase', [StudentShowcaseController::class, 'store'])->name('showcase.store');
+
+        Route::get('cart', [CartController::class, 'index'])->name('cart.index');
+        Route::post('cart/cohorts/{cohort}', [CartController::class, 'addCohort'])->name('cart.add-cohort');
+        Route::post('cart/packages/{package}', [CartController::class, 'addPackage'])->name('cart.add-package');
+        Route::delete('cart/items/{item}', [CartController::class, 'remove'])->name('cart.remove');
+        Route::post('cart/checkout', [CartCheckoutController::class, 'store'])->name('cart.checkout');
+
+        Route::get('bookmarks', [CourseBookmarkController::class, 'index'])->name('bookmarks.index');
     });
 
 // The course player is shared across every authenticated role (students learn;
@@ -187,6 +211,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{notificationId}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+
+    Route::post('courses/{course}/reviews', [CourseReviewController::class, 'store'])->name('courses.reviews.store');
+    Route::post('courses/{course}/questions', [CourseQuestionController::class, 'store'])->name('courses.questions.store');
+    Route::post('questions/{question}/replies', [CourseQuestionController::class, 'reply'])->name('questions.replies.store');
+    Route::post('courses/{course}/bookmark', [CourseBookmarkController::class, 'toggle'])->name('courses.bookmark');
 });
 
 // Checkout is student-only — admins/instructors have no reason to buy a seat.

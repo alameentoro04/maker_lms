@@ -93,7 +93,11 @@ class CheckoutController extends Controller
         if (! $result['success']) {
             $payment->update(['status' => 'failed']);
 
-            return to_route('checkout.create', $payment->order->cohort)->with('status', 'Payment was not successful. Please try again.');
+            $failureRoute = $payment->order->cohort_id
+                ? to_route('checkout.create', $payment->order->cohort)
+                : to_route('student.cart.index');
+
+            return $failureRoute->with('status', 'Payment was not successful. Please try again.');
         }
 
         try {

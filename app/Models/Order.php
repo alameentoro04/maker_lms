@@ -13,7 +13,7 @@ class Order extends Model
 
     public const STATUSES = ['pending', 'paid', 'cancelled', 'expired', 'refunded'];
 
-    protected $fillable = ['reference', 'user_id', 'course_id', 'cohort_id', 'amount', 'currency', 'status'];
+    protected $fillable = ['reference', 'user_id', 'course_id', 'cohort_id', 'coupon_id', 'discount_amount', 'amount', 'currency', 'status'];
 
     public function user(): BelongsTo
     {
@@ -38,6 +38,11 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
     }
 
     public function isPaid(): bool

@@ -1,5 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { PageProps } from '@/types';
 
 interface EnrollmentCard {
     course_title: string;
@@ -15,12 +16,34 @@ interface EnrollmentCard {
 const nav = [
     { label: 'Dashboard', href: route('student.dashboard') },
     { label: 'Showcase', href: route('student.showcase.index') },
+    { label: 'Cart', href: route('student.cart.index') },
+    { label: 'Bookmarks', href: route('student.bookmarks.index') },
 ];
 
 export default function Dashboard({ enrollments }: { enrollments: EnrollmentCard[] }) {
+    const { auth } = usePage<PageProps>().props;
+    const referralUrl = auth.user?.referral_code
+        ? `${window.location.origin}${route('register', {}, false)}?ref=${auth.user.referral_code}`
+        : null;
+
     return (
         <AuthenticatedLayout nav={nav} title="Your courses">
             <Head title="Dashboard" />
+
+            {referralUrl && (
+                <div className="mb-6 rounded-lg border border-gold-200 bg-gold-50/40 p-4">
+                    <p className="text-sm font-medium text-ink-900">Refer a friend</p>
+                    <p className="mt-1 text-xs text-ink-500">
+                        Share your link — you both get a discount coupon once they enroll.
+                    </p>
+                    <input
+                        readOnly
+                        value={referralUrl}
+                        onFocus={(e) => e.target.select()}
+                        className="mt-2 w-full rounded-md border border-ink-100 bg-white px-3 py-1.5 text-xs text-ink-700"
+                    />
+                </div>
+            )}
 
             {enrollments.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-ink-300 bg-white p-8 text-center text-ink-500">

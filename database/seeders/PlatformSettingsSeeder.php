@@ -27,6 +27,7 @@ class PlatformSettingsSeeder extends Seeder
             ['group' => 'payments', 'key' => 'bank_name', 'value' => 'Not yet configured', 'type' => 'string'],
             ['group' => 'payments', 'key' => 'account_name', 'value' => 'Not yet configured', 'type' => 'string'],
             ['group' => 'payments', 'key' => 'account_number', 'value' => 'Not yet configured', 'type' => 'string'],
+            ['group' => 'referrals', 'key' => 'discount_percent', 'value' => '10', 'type' => 'integer'],
         ];
 
         foreach ($defaults as $setting) {

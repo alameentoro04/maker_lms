@@ -27,6 +27,7 @@ class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'role' => $user->role?->slug,
                     'email_verified' => $user->hasVerifiedEmail(),
+                    'referral_code' => $user->referral_code,
                 ] : null,
             ],
             'flash' => [

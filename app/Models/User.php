@@ -15,7 +15,7 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
-        'role_id', 'name', 'email', 'phone', 'password', 'status',
+        'role_id', 'name', 'email', 'phone', 'referral_code', 'password', 'status',
     ];
 
     protected $hidden = [
@@ -49,6 +49,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function enrollments(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    public function bookmarks(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CourseBookmark::class);
+    }
+
+    public function cartItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CartItem::class);
+    }
+
+    public function referralsMade(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Referral::class, 'referrer_id');
     }
 
     /**

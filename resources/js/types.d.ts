@@ -4,6 +4,7 @@ export interface AuthUser {
     email: string;
     role: 'super_admin' | 'admin' | 'instructor' | 'staff' | 'student';
     email_verified: boolean;
+    referral_code: string | null;
 }
 
 export interface PageProps {

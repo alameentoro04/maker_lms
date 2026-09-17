@@ -4,6 +4,7 @@ import { PageProps } from '@/types';
 
 const navItems = [
     { label: 'Courses', href: route('courses.index') },
+    { label: 'Packages', href: route('packages.index') },
     { label: 'Showcase', href: route('showcase.index') },
     { label: 'About', href: route('about') },
     { label: 'Contact', href: route('contact') },
